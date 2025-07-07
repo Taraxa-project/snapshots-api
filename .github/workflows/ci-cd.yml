@@ -63,9 +63,9 @@ jobs:
       run: go vet ./...
 
     - name: Run staticcheck
-      uses: dominikh/staticcheck-action@v1.3.0
+      uses: dominikh/staticcheck-action@v1
       with:
-        version: "2023.1.7"
+        version: "latest"
 
   build:
     name: Build and Push Docker Image
