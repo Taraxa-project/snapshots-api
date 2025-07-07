@@ -1,0 +1,23 @@
+name: Release Charts
+
+on:
+  push:
+    paths:
+      # update this file to trigger helm chart release
+      - 'charts/snapshots-api/Chart.yaml'
+    branches:
+      - main
+
+jobs:
+  helm_release_chartmuseum:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Push Helm Chart to ChartMuseum
+      uses: bsord/helm-push@v4.2.0
+      with:
+        username: ${{ secrets.CHARTMUSEUM_USER }}
+        password: ${{ secrets.CHARTMUSEUM_PASSWORD }}
+        registry-url: 'https://charts.gcp.taraxa.io/'
+        force: true
+        chart-folder: './charts/snapshots-api'
