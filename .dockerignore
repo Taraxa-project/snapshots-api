@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# IDE
+.vscode
+.idea
+
+# Tests
+*_test.go
+coverage.*
+*.coverprofile
+
+# CI/CD
+.github
+
+# Helm
+charts/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/ 

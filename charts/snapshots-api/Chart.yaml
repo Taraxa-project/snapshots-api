@@ -1,0 +1,17 @@
+apiVersion: v2
+name: snapshots-api
+description: Taraxa Snapshots API - A service that provides blockchain snapshot information
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - blockchain
+  - snapshots
+  - taraxa
+  - api
+home: https://github.com/taraxa/snapshots-api
+sources:
+  - https://github.com/taraxa/snapshots-api
+maintainers:
+  - name: Taraxa Team
+    email: dev@taraxa.io 
