@@ -116,6 +116,16 @@ env:
   GCP_BUCKET_NAME: "taraxa-snapshot"
   GCP_BUCKET_URL: "https://storage.googleapis.com/storage/v1/b/taraxa-snapshot/o"
 
+# API Keys configuration (sensitive data should be stored in secrets)
+apiKeys:
+  # Set to true to enable API key authentication
+  enabled: false
+  # Secret containing the API keys (comma-separated)
+  secretName: "snapshots-api-keys"
+  secretKey: "API_KEYS"
+  # API keys for the secret template (for development only - use external secret management in production)
+  keys: []
+
 # ConfigMap for environment variables
 configMap:
   create: true 

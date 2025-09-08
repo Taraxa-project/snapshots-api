@@ -46,6 +46,14 @@ spec:
             - configMapRef:
                 name: {{ include "snapshots-api.fullname" . }}
             {{- end }}
+          {{- if .Values.apiKeys.enabled }}
+          env:
+            - name: API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.apiKeys.secretName }}
+                  key: {{ .Values.apiKeys.secretKey }}
+          {{- end }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

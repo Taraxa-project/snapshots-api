@@ -7,61 +7,92 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/taraxa/snapshots-api/internal/auth"
+	"github.com/taraxa/snapshots-api/internal/config"
 	"github.com/taraxa/snapshots-api/internal/models"
 )
 
-func TestHandler_GetSnapshots(t *testing.T) {
-	// Create a mock service
+func createTestHandler(apiKeys []string) (*Handler, *MockSnapshotService) {
 	mockService := &MockSnapshotService{}
-	handler := NewHandler(mockService)
+	cfg := &config.Config{APIKeys: apiKeys}
+	authMiddleware := auth.NewMiddleware(cfg)
+	handler := NewHandler(mockService, authMiddleware)
+	return handler, mockService
+}
+
+func TestHandler_GetSnapshots(t *testing.T) {
+	handler, mockService := createTestHandler([]string{"valid-api-key"})
 
 	tests := []struct {
 		name           string
 		queryParams    string
+		authHeader     string
 		expectedStatus int
 		checkResponse  bool
 		mockError      error
+		checkFullData  bool // Check if full snapshots are included
 	}{
 		{
-			name:           "valid mainnet request",
+			name:           "authenticated request - should get full and light snapshots",
 			queryParams:    "?network=mainnet",
+			authHeader:     "Bearer valid-api-key",
 			expectedStatus: http.StatusOK,
 			checkResponse:  true,
+			checkFullData:  true,
 			mockError:      nil,
 		},
 		{
-			name:           "valid testnet request",
-			queryParams:    "?network=testnet",
+			name:           "unauthenticated request - should get only light snapshots",
+			queryParams:    "?network=mainnet",
+			authHeader:     "",
 			expectedStatus: http.StatusOK,
 			checkResponse:  true,
+			checkFullData:  false,
 			mockError:      nil,
 		},
 		{
-			name:           "valid devnet request",
-			queryParams:    "?network=devnet",
+			name:           "invalid API key - should get only light snapshots",
+			queryParams:    "?network=mainnet",
+			authHeader:     "Bearer invalid-key",
 			expectedStatus: http.StatusOK,
 			checkResponse:  true,
+			checkFullData:  false,
+			mockError:      nil,
+		},
+		{
+			name:           "malformed auth header - should get only light snapshots",
+			queryParams:    "?network=mainnet",
+			authHeader:     "InvalidFormat",
+			expectedStatus: http.StatusOK,
+			checkResponse:  true,
+			checkFullData:  false,
 			mockError:      nil,
 		},
 		{
 			name:           "missing network parameter",
 			queryParams:    "",
+			authHeader:     "",
 			expectedStatus: http.StatusBadRequest,
 			checkResponse:  false,
+			checkFullData:  false,
 			mockError:      nil,
 		},
 		{
 			name:           "invalid network",
 			queryParams:    "?network=invalid",
+			authHeader:     "",
 			expectedStatus: http.StatusBadRequest,
 			checkResponse:  false,
+			checkFullData:  false,
 			mockError:      nil,
 		},
 		{
-			name:           "service error",
+			name:           "service error with auth",
 			queryParams:    "?network=mainnet",
+			authHeader:     "Bearer valid-api-key",
 			expectedStatus: http.StatusInternalServerError,
 			checkResponse:  false,
+			checkFullData:  false,
 			mockError:      errors.New("service error"),
 		},
 	}
@@ -70,16 +101,21 @@ func TestHandler_GetSnapshots(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup mock behavior
 			if tt.mockError != nil {
-				mockService.GetSnapshotsFunc = func(network models.Network) (*models.NetworkSnapshots, error) {
+				mockService.GetSnapshotsWithAuthFunc = func(network models.Network, authenticated bool) (*models.NetworkSnapshots, error) {
 					return nil, tt.mockError
 				}
 			} else {
-				mockService.GetSnapshotsFunc = nil // Use default
+				mockService.GetSnapshotsWithAuthFunc = nil // Use default
 			}
 
 			req, err := http.NewRequest("GET", "/"+tt.queryParams, nil)
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			// Add auth header if provided
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
 			}
 
 			rr := httptest.NewRecorder()
@@ -94,6 +130,25 @@ func TestHandler_GetSnapshots(t *testing.T) {
 				var result models.NetworkSnapshots
 				if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
 					t.Errorf("Failed to unmarshal response: %v", err)
+				}
+
+				// Check authentication filtering
+				if tt.checkFullData {
+					// Should have both full and light snapshots
+					if result.Full == nil {
+						t.Errorf("Expected full snapshot data for authenticated request, got nil")
+					}
+					if result.Light == nil {
+						t.Errorf("Expected light snapshot data, got nil")
+					}
+				} else {
+					// Should have only light snapshots
+					if result.Full != nil {
+						t.Errorf("Expected no full snapshot data for unauthenticated request, got %+v", result.Full)
+					}
+					if result.Light == nil {
+						t.Errorf("Expected light snapshot data, got nil")
+					}
 				}
 
 				// Check content type
@@ -112,8 +167,7 @@ func TestHandler_GetSnapshots(t *testing.T) {
 }
 
 func TestHandler_GetSnapshots_InvalidMethods(t *testing.T) {
-	mockService := &MockSnapshotService{}
-	handler := NewHandler(mockService)
+	handler, _ := createTestHandler([]string{})
 
 	methods := []string{"POST", "PUT", "DELETE", "PATCH"}
 
@@ -135,8 +189,7 @@ func TestHandler_GetSnapshots_InvalidMethods(t *testing.T) {
 }
 
 func TestHandler_Health(t *testing.T) {
-	mockService := &MockSnapshotService{}
-	handler := NewHandler(mockService)
+	handler, _ := createTestHandler([]string{})
 
 	req, err := http.NewRequest("GET", "/health", nil)
 	if err != nil {
@@ -172,8 +225,7 @@ func TestHandler_Health(t *testing.T) {
 }
 
 func TestHandler_Ready(t *testing.T) {
-	mockService := &MockSnapshotService{}
-	handler := NewHandler(mockService)
+	handler, mockService := createTestHandler([]string{})
 
 	tests := []struct {
 		name           string
@@ -238,8 +290,7 @@ func TestHandler_Ready(t *testing.T) {
 }
 
 func TestHandler_Health_InvalidMethods(t *testing.T) {
-	mockService := &MockSnapshotService{}
-	handler := NewHandler(mockService)
+	handler, _ := createTestHandler([]string{})
 
 	methods := []string{"POST", "PUT", "DELETE", "PATCH"}
 
@@ -261,8 +312,7 @@ func TestHandler_Health_InvalidMethods(t *testing.T) {
 }
 
 func TestHandler_Ready_InvalidMethods(t *testing.T) {
-	mockService := &MockSnapshotService{}
-	handler := NewHandler(mockService)
+	handler, _ := createTestHandler([]string{})
 
 	methods := []string{"POST", "PUT", "DELETE", "PATCH"}
 
@@ -284,8 +334,7 @@ func TestHandler_Ready_InvalidMethods(t *testing.T) {
 }
 
 func TestHandler_Routes(t *testing.T) {
-	mockService := &MockSnapshotService{}
-	handler := NewHandler(mockService)
+	handler, _ := createTestHandler([]string{})
 
 	routes := handler.Routes()
 	if routes == nil {

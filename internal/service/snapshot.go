@@ -42,14 +42,27 @@ func NewSnapshotService(bucketName, bucketURL string) *SnapshotService {
 	}
 }
 
-// GetSnapshots retrieves snapshots for a specific network
+// GetSnapshots retrieves snapshots for a specific network (backward compatibility)
 func (s *SnapshotService) GetSnapshots(network models.Network) (*models.NetworkSnapshots, error) {
+	return s.GetSnapshotsWithAuth(network, true)
+}
+
+// GetSnapshotsWithAuth retrieves snapshots for a specific network with authentication filtering
+func (s *SnapshotService) GetSnapshotsWithAuth(network models.Network, authenticated bool) (*models.NetworkSnapshots, error) {
 	s.mutex.RLock()
 	cached, exists := s.cache[network]
 	cacheValid := time.Since(s.cacheTime) < s.cacheTTL
 	s.mutex.RUnlock()
 
 	if exists && cacheValid {
+		// If not authenticated, filter out full snapshots from cached data
+		if !authenticated {
+			filteredResult := &models.NetworkSnapshots{
+				Light: cached.Light,
+				// Full is omitted (nil) for unauthenticated requests
+			}
+			return filteredResult, nil
+		}
 		return cached, nil
 	}
 
@@ -69,6 +82,15 @@ func (s *SnapshotService) GetSnapshots(network models.Network) (*models.NetworkS
 	result, exists := s.cache[network]
 	if !exists {
 		return &models.NetworkSnapshots{}, nil
+	}
+
+	// If not authenticated, filter out full snapshots
+	if !authenticated {
+		filteredResult := &models.NetworkSnapshots{
+			Light: result.Light,
+			// Full is omitted (nil) for unauthenticated requests
+		}
+		return filteredResult, nil
 	}
 
 	return result, nil
