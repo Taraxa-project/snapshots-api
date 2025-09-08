@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/taraxa/snapshots-api/internal/api"
+	"github.com/taraxa/snapshots-api/internal/auth"
 	"github.com/taraxa/snapshots-api/internal/config"
 	"github.com/taraxa/snapshots-api/internal/service"
 )
@@ -21,8 +22,11 @@ func main() {
 	// Initialize snapshot service
 	snapshotService := service.NewSnapshotService(cfg.GCPBucketName, cfg.GCPBucketURL)
 
+	// Initialize authentication middleware
+	authMiddleware := auth.NewMiddleware(cfg)
+
 	// Initialize API handlers
-	handler := api.NewHandler(snapshotService)
+	handler := api.NewHandler(snapshotService, authMiddleware)
 
 	// Setup HTTP server
 	server := &http.Server{

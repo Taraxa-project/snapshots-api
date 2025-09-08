@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/taraxa/snapshots-api/internal/auth"
 	"github.com/taraxa/snapshots-api/internal/models"
 	"github.com/taraxa/snapshots-api/internal/service"
 )
@@ -12,12 +13,14 @@ import (
 // Handler holds the API handlers
 type Handler struct {
 	snapshotService service.SnapshotServiceInterface
+	authMiddleware  *auth.Middleware
 }
 
 // NewHandler creates a new API handler
-func NewHandler(snapshotService service.SnapshotServiceInterface) *Handler {
+func NewHandler(snapshotService service.SnapshotServiceInterface, authMiddleware *auth.Middleware) *Handler {
 	return &Handler{
 		snapshotService: snapshotService,
+		authMiddleware:  authMiddleware,
 	}
 }
 
@@ -52,8 +55,11 @@ func (h *Handler) getSnapshots(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get snapshots
-	snapshots, err := h.snapshotService.GetSnapshots(models.Network(network))
+	// Check authentication
+	authenticated := h.authMiddleware.IsAuthenticated(r)
+
+	// Get snapshots with authentication filter
+	snapshots, err := h.snapshotService.GetSnapshotsWithAuth(models.Network(network), authenticated)
 	if err != nil {
 		log.Printf("Error fetching snapshots for network %s: %v", network, err)
 		http.Error(w, "failed to fetch snapshots", http.StatusInternalServerError)

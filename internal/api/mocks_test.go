@@ -6,9 +6,10 @@ import (
 
 // MockSnapshotService is a mock implementation for testing
 type MockSnapshotService struct {
-	GetSnapshotsFunc   func(network models.Network) (*models.NetworkSnapshots, error)
-	IsValidNetworkFunc func(network string) bool
-	GetAllNetworksFunc func() []models.Network
+	GetSnapshotsFunc         func(network models.Network) (*models.NetworkSnapshots, error)
+	GetSnapshotsWithAuthFunc func(network models.Network, authenticated bool) (*models.NetworkSnapshots, error)
+	IsValidNetworkFunc       func(network string) bool
+	GetAllNetworksFunc       func() []models.Network
 }
 
 func (m *MockSnapshotService) GetSnapshots(network models.Network) (*models.NetworkSnapshots, error) {
@@ -28,6 +29,30 @@ func (m *MockSnapshotService) GetSnapshots(network models.Network) (*models.Netw
 			URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-light-db-block-12345-20250706-143000.tar.gz",
 		},
 	}, nil
+}
+
+func (m *MockSnapshotService) GetSnapshotsWithAuth(network models.Network, authenticated bool) (*models.NetworkSnapshots, error) {
+	if m.GetSnapshotsWithAuthFunc != nil {
+		return m.GetSnapshotsWithAuthFunc(network, authenticated)
+	}
+	// Default implementation - returns full snapshots only if authenticated
+	result := &models.NetworkSnapshots{
+		Light: &models.SnapshotInfo{
+			Block:     12345,
+			Timestamp: "2025-07-06 14:30",
+			URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-light-db-block-12345-20250706-143000.tar.gz",
+		},
+	}
+
+	if authenticated {
+		result.Full = &models.SnapshotInfo{
+			Block:     12345,
+			Timestamp: "2025-07-06 14:30",
+			URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-full-db-block-12345-20250706-143000.tar.gz",
+		}
+	}
+
+	return result, nil
 }
 
 func (m *MockSnapshotService) IsValidNetwork(network string) bool {
