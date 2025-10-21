@@ -273,11 +273,11 @@ func TestSnapshotService_findLatestAndPreviousSnapshots(t *testing.T) {
 	service := NewSnapshotService("test-bucket", "https://test.example.com")
 
 	tests := []struct {
-		name                  string
-		snapshots             []*models.Snapshot
-		expectedLatestNil     bool
-		expectedLatestBlock   int64
-		expectedPreviousCount int
+		name                   string
+		snapshots              []*models.Snapshot
+		expectedLatestNil      bool
+		expectedLatestBlock    int64
+		expectedPreviousCount  int
 		expectedPreviousBlocks []int64
 	}{
 		{
