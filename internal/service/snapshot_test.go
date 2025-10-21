@@ -12,8 +12,41 @@ import (
 func TestSnapshotService_processSnapshots(t *testing.T) {
 	service := NewSnapshotService("test-bucket", "https://test.example.com")
 
-	// Create test snapshots
+	// Create test snapshots with multiple snapshots per type to test previous arrays
 	snapshots := []*models.Snapshot{
+		// Mainnet full snapshots (5 total)
+		{
+			Network:   models.NetworkMainnet,
+			Type:      models.SnapshotTypeFull,
+			Block:     500,
+			Timestamp: time.Date(2025, 7, 10, 10, 0, 0, 0, time.UTC),
+			URL:       "https://example.com/mainnet-full-500.tar.gz",
+			Filename:  "mainnet-full-500.tar.gz",
+		},
+		{
+			Network:   models.NetworkMainnet,
+			Type:      models.SnapshotTypeFull,
+			Block:     400,
+			Timestamp: time.Date(2025, 7, 9, 10, 0, 0, 0, time.UTC),
+			URL:       "https://example.com/mainnet-full-400.tar.gz",
+			Filename:  "mainnet-full-400.tar.gz",
+		},
+		{
+			Network:   models.NetworkMainnet,
+			Type:      models.SnapshotTypeFull,
+			Block:     300,
+			Timestamp: time.Date(2025, 7, 8, 10, 0, 0, 0, time.UTC),
+			URL:       "https://example.com/mainnet-full-300.tar.gz",
+			Filename:  "mainnet-full-300.tar.gz",
+		},
+		{
+			Network:   models.NetworkMainnet,
+			Type:      models.SnapshotTypeFull,
+			Block:     200,
+			Timestamp: time.Date(2025, 7, 7, 10, 0, 0, 0, time.UTC),
+			URL:       "https://example.com/mainnet-full-200.tar.gz",
+			Filename:  "mainnet-full-200.tar.gz",
+		},
 		{
 			Network:   models.NetworkMainnet,
 			Type:      models.SnapshotTypeFull,
@@ -22,22 +55,40 @@ func TestSnapshotService_processSnapshots(t *testing.T) {
 			URL:       "https://example.com/mainnet-full-100.tar.gz",
 			Filename:  "mainnet-full-100.tar.gz",
 		},
+		// Mainnet light snapshots (4 total)
 		{
 			Network:   models.NetworkMainnet,
-			Type:      models.SnapshotTypeFull,
-			Block:     200,
-			Timestamp: time.Date(2025, 7, 6, 11, 0, 0, 0, time.UTC),
-			URL:       "https://example.com/mainnet-full-200.tar.gz",
-			Filename:  "mainnet-full-200.tar.gz",
+			Type:      models.SnapshotTypeLight,
+			Block:     450,
+			Timestamp: time.Date(2025, 7, 9, 15, 0, 0, 0, time.UTC),
+			URL:       "https://example.com/mainnet-light-450.tar.gz",
+			Filename:  "mainnet-light-450.tar.gz",
+		},
+		{
+			Network:   models.NetworkMainnet,
+			Type:      models.SnapshotTypeLight,
+			Block:     350,
+			Timestamp: time.Date(2025, 7, 8, 15, 0, 0, 0, time.UTC),
+			URL:       "https://example.com/mainnet-light-350.tar.gz",
+			Filename:  "mainnet-light-350.tar.gz",
+		},
+		{
+			Network:   models.NetworkMainnet,
+			Type:      models.SnapshotTypeLight,
+			Block:     250,
+			Timestamp: time.Date(2025, 7, 7, 15, 0, 0, 0, time.UTC),
+			URL:       "https://example.com/mainnet-light-250.tar.gz",
+			Filename:  "mainnet-light-250.tar.gz",
 		},
 		{
 			Network:   models.NetworkMainnet,
 			Type:      models.SnapshotTypeLight,
 			Block:     150,
-			Timestamp: time.Date(2025, 7, 6, 10, 30, 0, 0, time.UTC),
+			Timestamp: time.Date(2025, 7, 6, 15, 0, 0, 0, time.UTC),
 			URL:       "https://example.com/mainnet-light-150.tar.gz",
 			Filename:  "mainnet-light-150.tar.gz",
 		},
+		// Testnet full snapshot (only 1)
 		{
 			Network:   models.NetworkTestnet,
 			Type:      models.SnapshotTypeFull,
@@ -56,16 +107,42 @@ func TestSnapshotService_processSnapshots(t *testing.T) {
 		t.Error("Expected mainnet snapshots to exist")
 	}
 
+	// Check mainnet full snapshots
 	if mainnetResult.Full == nil {
 		t.Error("Expected mainnet full snapshot to exist")
-	} else if mainnetResult.Full.Block != 200 {
-		t.Errorf("Expected mainnet full snapshot block 200, got %d", mainnetResult.Full.Block)
+	} else if mainnetResult.Full.Block != 500 {
+		t.Errorf("Expected mainnet full snapshot block 500, got %d", mainnetResult.Full.Block)
 	}
 
+	// Check mainnet previous full snapshots
+	if len(mainnetResult.PreviousFull) != 3 {
+		t.Errorf("Expected 3 previous full snapshots, got %d", len(mainnetResult.PreviousFull))
+	} else {
+		expectedBlocks := []int64{400, 300, 200}
+		for i, expected := range expectedBlocks {
+			if mainnetResult.PreviousFull[i].Block != expected {
+				t.Errorf("Expected previous full snapshot %d to have block %d, got %d", i, expected, mainnetResult.PreviousFull[i].Block)
+			}
+		}
+	}
+
+	// Check mainnet light snapshots
 	if mainnetResult.Light == nil {
 		t.Error("Expected mainnet light snapshot to exist")
-	} else if mainnetResult.Light.Block != 150 {
-		t.Errorf("Expected mainnet light snapshot block 150, got %d", mainnetResult.Light.Block)
+	} else if mainnetResult.Light.Block != 450 {
+		t.Errorf("Expected mainnet light snapshot block 450, got %d", mainnetResult.Light.Block)
+	}
+
+	// Check mainnet previous light snapshots
+	if len(mainnetResult.PreviousLight) != 3 {
+		t.Errorf("Expected 3 previous light snapshots, got %d", len(mainnetResult.PreviousLight))
+	} else {
+		expectedBlocks := []int64{350, 250, 150}
+		for i, expected := range expectedBlocks {
+			if mainnetResult.PreviousLight[i].Block != expected {
+				t.Errorf("Expected previous light snapshot %d to have block %d, got %d", i, expected, mainnetResult.PreviousLight[i].Block)
+			}
+		}
 	}
 
 	// Check testnet results
@@ -74,14 +151,25 @@ func TestSnapshotService_processSnapshots(t *testing.T) {
 		t.Error("Expected testnet snapshots to exist")
 	}
 
+	// Testnet should have only 1 full snapshot (no previous)
 	if testnetResult.Full == nil {
 		t.Error("Expected testnet full snapshot to exist")
 	} else if testnetResult.Full.Block != 50 {
 		t.Errorf("Expected testnet full snapshot block 50, got %d", testnetResult.Full.Block)
 	}
 
+	// Testnet should have no previous full snapshots
+	if len(testnetResult.PreviousFull) != 0 {
+		t.Errorf("Expected 0 previous full snapshots for testnet, got %d", len(testnetResult.PreviousFull))
+	}
+
+	// Testnet should have no light snapshots
 	if testnetResult.Light != nil {
 		t.Error("Expected testnet light snapshot to be nil")
+	}
+
+	if len(testnetResult.PreviousLight) != 0 {
+		t.Errorf("Expected 0 previous light snapshots for testnet, got %d", len(testnetResult.PreviousLight))
 	}
 }
 
@@ -175,6 +263,123 @@ func TestSnapshotService_findLatestSnapshot(t *testing.T) {
 				expectedTime := time.Date(2025, 7, 6, 12, 0, 0, 0, time.UTC)
 				if !result.Timestamp.Equal(expectedTime) {
 					t.Errorf("Expected timestamp %v, got %v", expectedTime, result.Timestamp)
+				}
+			}
+		})
+	}
+}
+
+func TestSnapshotService_findLatestAndPreviousSnapshots(t *testing.T) {
+	service := NewSnapshotService("test-bucket", "https://test.example.com")
+
+	tests := []struct {
+		name                   string
+		snapshots              []*models.Snapshot
+		expectedLatestNil      bool
+		expectedLatestBlock    int64
+		expectedPreviousCount  int
+		expectedPreviousBlocks []int64
+	}{
+		{
+			name:                  "empty slice",
+			snapshots:             []*models.Snapshot{},
+			expectedLatestNil:     true,
+			expectedPreviousCount: 0,
+		},
+		{
+			name: "single snapshot",
+			snapshots: []*models.Snapshot{
+				{
+					Block:     100,
+					Timestamp: time.Date(2025, 7, 6, 10, 0, 0, 0, time.UTC),
+				},
+			},
+			expectedLatestNil:     false,
+			expectedLatestBlock:   100,
+			expectedPreviousCount: 0,
+		},
+		{
+			name: "two snapshots",
+			snapshots: []*models.Snapshot{
+				{
+					Block:     100,
+					Timestamp: time.Date(2025, 7, 6, 10, 0, 0, 0, time.UTC),
+				},
+				{
+					Block:     200,
+					Timestamp: time.Date(2025, 7, 6, 11, 0, 0, 0, time.UTC),
+				},
+			},
+			expectedLatestNil:      false,
+			expectedLatestBlock:    200,
+			expectedPreviousCount:  1,
+			expectedPreviousBlocks: []int64{100},
+		},
+		{
+			name: "five snapshots - should return latest + 3 previous",
+			snapshots: []*models.Snapshot{
+				{
+					Block:     100,
+					Timestamp: time.Date(2025, 7, 6, 10, 0, 0, 0, time.UTC),
+				},
+				{
+					Block:     200,
+					Timestamp: time.Date(2025, 7, 6, 11, 0, 0, 0, time.UTC),
+				},
+				{
+					Block:     300,
+					Timestamp: time.Date(2025, 7, 6, 12, 0, 0, 0, time.UTC),
+				},
+				{
+					Block:     400,
+					Timestamp: time.Date(2025, 7, 6, 13, 0, 0, 0, time.UTC),
+				},
+				{
+					Block:     500,
+					Timestamp: time.Date(2025, 7, 6, 14, 0, 0, 0, time.UTC),
+				},
+			},
+			expectedLatestNil:      false,
+			expectedLatestBlock:    500,
+			expectedPreviousCount:  3,
+			expectedPreviousBlocks: []int64{400, 300, 200},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			latest, previous := service.findLatestAndPreviousSnapshots(tt.snapshots)
+
+			// Check latest
+			if tt.expectedLatestNil {
+				if latest != nil {
+					t.Error("Expected nil latest result")
+				}
+			} else {
+				if latest == nil {
+					t.Error("Expected non-nil latest result")
+					return
+				}
+				if latest.Block != tt.expectedLatestBlock {
+					t.Errorf("Expected latest block %d, got %d", tt.expectedLatestBlock, latest.Block)
+				}
+			}
+
+			// Check previous count
+			if len(previous) != tt.expectedPreviousCount {
+				t.Errorf("Expected %d previous snapshots, got %d", tt.expectedPreviousCount, len(previous))
+			}
+
+			// Check previous blocks
+			if tt.expectedPreviousBlocks != nil {
+				for i, expectedBlock := range tt.expectedPreviousBlocks {
+					if i >= len(previous) {
+						t.Errorf("Expected previous snapshot at index %d with block %d, but not enough snapshots", i, expectedBlock)
+						continue
+					}
+					if previous[i].Block != expectedBlock {
+						t.Errorf("Expected previous snapshot %d to have block %d, got %d", i, expectedBlock, previous[i].Block)
+					}
 				}
 			}
 		})

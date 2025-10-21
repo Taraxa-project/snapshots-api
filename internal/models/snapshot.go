@@ -38,8 +38,10 @@ type SnapshotInfo struct {
 
 // NetworkSnapshots represents snapshots for a specific network
 type NetworkSnapshots struct {
-	Full  *SnapshotInfo `json:"full,omitempty"`
-	Light *SnapshotInfo `json:"light,omitempty"`
+	Full          *SnapshotInfo  `json:"full,omitempty"`
+	Light         *SnapshotInfo  `json:"light,omitempty"`
+	PreviousLight []SnapshotInfo `json:"previous-light,omitempty"`
+	PreviousFull  []SnapshotInfo `json:"previous-full,omitempty"`
 }
 
 // ToSnapshotInfo converts a Snapshot to SnapshotInfo with formatted timestamp

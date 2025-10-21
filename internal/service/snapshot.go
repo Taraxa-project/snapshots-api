@@ -58,8 +58,9 @@ func (s *SnapshotService) GetSnapshotsWithAuth(network models.Network, authentic
 		// If not authenticated, filter out full snapshots from cached data
 		if !authenticated {
 			filteredResult := &models.NetworkSnapshots{
-				Light: cached.Light,
-				// Full is omitted (nil) for unauthenticated requests
+				Light:         cached.Light,
+				PreviousLight: cached.PreviousLight,
+				// Full and PreviousFull are omitted (nil) for unauthenticated requests
 			}
 			return filteredResult, nil
 		}
@@ -87,8 +88,9 @@ func (s *SnapshotService) GetSnapshotsWithAuth(network models.Network, authentic
 	// If not authenticated, filter out full snapshots
 	if !authenticated {
 		filteredResult := &models.NetworkSnapshots{
-			Light: result.Light,
-			// Full is omitted (nil) for unauthenticated requests
+			Light:         result.Light,
+			PreviousLight: result.PreviousLight,
+			// Full and PreviousFull are omitted (nil) for unauthenticated requests
 		}
 		return filteredResult, nil
 	}
@@ -145,18 +147,32 @@ func (s *SnapshotService) processSnapshots(snapshots []*models.Snapshot) map[mod
 		)
 	}
 
-	// Find latest snapshot for each network and type
+	// Find latest and previous snapshots for each network and type
 	for network, typeSnapshots := range networkSnapshots {
 		networkResult := &models.NetworkSnapshots{}
 
 		for snapshotType, snapshots := range typeSnapshots {
-			latest := s.findLatestSnapshot(snapshots)
+			latest, previous := s.findLatestAndPreviousSnapshots(snapshots)
 			if latest != nil {
 				switch snapshotType {
 				case models.SnapshotTypeFull:
 					networkResult.Full = latest.ToSnapshotInfo()
+					// Convert previous snapshots to SnapshotInfo
+					if len(previous) > 0 {
+						networkResult.PreviousFull = make([]models.SnapshotInfo, len(previous))
+						for i, snap := range previous {
+							networkResult.PreviousFull[i] = *snap.ToSnapshotInfo()
+						}
+					}
 				case models.SnapshotTypeLight:
 					networkResult.Light = latest.ToSnapshotInfo()
+					// Convert previous snapshots to SnapshotInfo
+					if len(previous) > 0 {
+						networkResult.PreviousLight = make([]models.SnapshotInfo, len(previous))
+						for i, snap := range previous {
+							networkResult.PreviousLight[i] = *snap.ToSnapshotInfo()
+						}
+					}
 				}
 			}
 		}
@@ -181,6 +197,36 @@ func (s *SnapshotService) findLatestSnapshot(snapshots []*models.Snapshot) *mode
 	})
 
 	return snapshots[0]
+}
+
+// findLatestAndPreviousSnapshots finds the latest snapshot and up to 3 previous snapshots
+func (s *SnapshotService) findLatestAndPreviousSnapshots(snapshots []*models.Snapshot) (*models.Snapshot, []*models.Snapshot) {
+	if len(snapshots) == 0 {
+		return nil, nil
+	}
+
+	// Sort by block number (descending), then by timestamp (descending)
+	sort.Slice(snapshots, func(i, j int) bool {
+		if snapshots[i].Block != snapshots[j].Block {
+			return snapshots[i].Block > snapshots[j].Block
+		}
+		return snapshots[i].Timestamp.After(snapshots[j].Timestamp)
+	})
+
+	latest := snapshots[0]
+
+	// Get up to 3 previous snapshots
+	var previous []*models.Snapshot
+	maxPrevious := 3
+	if len(snapshots) > 1 {
+		endIndex := len(snapshots)
+		if len(snapshots) > maxPrevious+1 {
+			endIndex = maxPrevious + 1
+		}
+		previous = snapshots[1:endIndex]
+	}
+
+	return latest, previous
 }
 
 // IsValidNetwork checks if a network string is valid

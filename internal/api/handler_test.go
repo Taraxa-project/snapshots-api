@@ -141,6 +141,14 @@ func TestHandler_GetSnapshots(t *testing.T) {
 					if result.Light == nil {
 						t.Errorf("Expected light snapshot data, got nil")
 					}
+					// Should have previous-full for authenticated requests
+					if result.PreviousFull == nil {
+						t.Errorf("Expected previous-full data for authenticated request, got nil")
+					}
+					// Should have previous-light for all requests
+					if result.PreviousLight == nil {
+						t.Errorf("Expected previous-light data, got nil")
+					}
 				} else {
 					// Should have only light snapshots
 					if result.Full != nil {
@@ -148,6 +156,14 @@ func TestHandler_GetSnapshots(t *testing.T) {
 					}
 					if result.Light == nil {
 						t.Errorf("Expected light snapshot data, got nil")
+					}
+					// Should NOT have previous-full for unauthenticated requests
+					if result.PreviousFull != nil {
+						t.Errorf("Expected no previous-full data for unauthenticated request, got %+v", result.PreviousFull)
+					}
+					// Should have previous-light for all requests
+					if result.PreviousLight == nil {
+						t.Errorf("Expected previous-light data, got nil")
 					}
 				}
 
