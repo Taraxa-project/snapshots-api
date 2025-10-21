@@ -28,6 +28,30 @@ func (m *MockSnapshotService) GetSnapshots(network models.Network) (*models.Netw
 			Timestamp: "2025-07-06 14:30",
 			URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-light-db-block-12345-20250706-143000.tar.gz",
 		},
+		PreviousFull: []models.SnapshotInfo{
+			{
+				Block:     12344,
+				Timestamp: "2025-07-05 14:30",
+				URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-full-db-block-12344-20250705-143000.tar.gz",
+			},
+			{
+				Block:     12343,
+				Timestamp: "2025-07-04 14:30",
+				URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-full-db-block-12343-20250704-143000.tar.gz",
+			},
+		},
+		PreviousLight: []models.SnapshotInfo{
+			{
+				Block:     12344,
+				Timestamp: "2025-07-05 14:30",
+				URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-light-db-block-12344-20250705-143000.tar.gz",
+			},
+			{
+				Block:     12343,
+				Timestamp: "2025-07-04 14:30",
+				URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-light-db-block-12343-20250704-143000.tar.gz",
+			},
+		},
 	}, nil
 }
 
@@ -42,6 +66,18 @@ func (m *MockSnapshotService) GetSnapshotsWithAuth(network models.Network, authe
 			Timestamp: "2025-07-06 14:30",
 			URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-light-db-block-12345-20250706-143000.tar.gz",
 		},
+		PreviousLight: []models.SnapshotInfo{
+			{
+				Block:     12344,
+				Timestamp: "2025-07-05 14:30",
+				URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-light-db-block-12344-20250705-143000.tar.gz",
+			},
+			{
+				Block:     12343,
+				Timestamp: "2025-07-04 14:30",
+				URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-light-db-block-12343-20250704-143000.tar.gz",
+			},
+		},
 	}
 
 	if authenticated {
@@ -49,6 +85,18 @@ func (m *MockSnapshotService) GetSnapshotsWithAuth(network models.Network, authe
 			Block:     12345,
 			Timestamp: "2025-07-06 14:30",
 			URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-full-db-block-12345-20250706-143000.tar.gz",
+		}
+		result.PreviousFull = []models.SnapshotInfo{
+			{
+				Block:     12344,
+				Timestamp: "2025-07-05 14:30",
+				URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-full-db-block-12344-20250705-143000.tar.gz",
+			},
+			{
+				Block:     12343,
+				Timestamp: "2025-07-04 14:30",
+				URL:       "https://storage.googleapis.com/taraxa-snapshot/mainnet-full-db-block-12343-20250704-143000.tar.gz",
+			},
 		}
 	}
 
